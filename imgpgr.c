@@ -35,7 +35,7 @@ static
 void
 sighandler(int sig){
     if(sig == SIGWINCH)
-        need_rescale = 1;
+        return need_rescale = 1, (void)0;
 }
 
 static
@@ -79,7 +79,7 @@ write_func(void* ctx, void* d, int size){
             if((b64_size % 4) != 0) b64buff[b64_size++] = '=';
         }
         if(first){
-            printf("\033[H");
+            printf("\033[H\033[2J");
             printf("\033_Gf=100,a=t,i=%d,m=%d,q=1;",++id, m);
             first = 0;
         }
@@ -329,44 +329,20 @@ int main(int argc, const char** argv){
             }
             if(1){
                 #if DO_TIMING
-                struct timespec t0, t1;
-                clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+                    struct timespec t0, t1;
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
                 #endif
                 stbi_write_png_to_func(write_func, NULL, w, h, n, data2, 0);
                 #if DO_TIMING
-                clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-                printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+                    printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
                 #endif
                 goto cleanup;
             }
 
-            if(0){
-                #if DO_TIMING
+            #if DO_TIMING
                 struct timespec t0, t1;
                 clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
-                #endif
-                const char * tmp = "/tmp/foo.png";
-                const char * b64 = "L3RtcC9mb28ucG5nCg==";
-                stbi_write_png(tmp, w, h, n, data2, 0);
-                printf("\033[H\033_Ga=d\033\\");
-                printf("\033_Gf=100,a=T,t=t;");
-                size_t a = base64_encode_size(strlen(tmp));
-                char* b = malloc(a);
-                if(!b) goto cleanup;
-                size_t c = base64_encode(b, a, tmp, strlen(tmp));
-                printf("%.*s\033\\\n\r", (int)c, b);
-                printf("\033\\\033[2K%d/%d\n", current+1, npaths);
-                fflush(stdout);
-                free(b);
-                #if DO_TIMING
-                clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-                printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
-                #endif
-                goto cleanup;
-            }
-            #if DO_TIMING
-            struct timespec t0, t1;
-            clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
             #endif
             size_t b64_len = base64_encode_size(data2_length);
             data3 = malloc(b64_len);
@@ -374,7 +350,7 @@ int main(int argc, const char** argv){
             size_t used = base64_encode((char*)data3, b64_len, data2, data2_length);
             if(!used) goto cleanup;
             uint8_t* to_write = data3;
-            printf("\033[H\033_Ga=d\033\\");
+            printf("\033[H\033[2J\033_Ga=d\033\\");
             printf("\033_Gf=%d,a=T,s=%d,v=%d,", n*8, w, h);
             enum {chunk_size=4096};
             // write first chunk differently
@@ -414,8 +390,8 @@ int main(int argc, const char** argv){
             printf("\033\\\033[2K%d/%d\n", current+1, npaths);
             fflush(stdout);
             #if DO_TIMING
-            clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-            printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+                printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
             #endif
             {
                 cleanup:
@@ -429,7 +405,7 @@ int main(int argc, const char** argv){
             if(used %4 != 0) b64buff[used++] = '=';
             if(used %4 != 0) b64buff[used++] = '=';
             if(used %4 != 0) b64buff[used++] = '=';
-            printf("\033[H\033_Ga=d\033\\");
+            printf("\033[H\033[2J\033_Ga=d\033\\");
             printf("\033_Ga=T,f=100,t=f,d=a,C=0;%.*s\033\\\n\r", (int)used, b64buff);
             printf("\033[2K%d/%d\n", current+1, npaths);
             // printf("%.*s\n", (int)path.length, path.text);
