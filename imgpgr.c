@@ -8,7 +8,9 @@
 #include "DrpLib/parse_numbers.h"
 #include "DrpLib/base64.h"
 #include <time.h>
+#ifdef __ARM_NEON
 #define STBI_NEON 1
+#endif
 #define STB_IMAGE_IMPLEMENTATION 1
 #include "stb/stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION 1
@@ -110,6 +112,7 @@ write_func(void* ctx, void* d, int size){
 }
 
 int main(int argc, const char** argv){
+    _Bool is_remote = !!getenv("SSH_CLIENT");
     signal(SIGWINCH, sighandler);
     ArgToParse pos_args[] = {
         [0] = {
@@ -158,6 +161,11 @@ int main(int argc, const char** argv){
             .name = SV("--auto"),
             .dest = ARGDEST(&auto_scale),
             .help = "Rescale images to the width or height of the terminal, whichever requires less scaling and will fit.",
+        },
+        {
+            .name = SV("--remote"),
+            .dest = ARGDEST(&is_remote),
+            .help = "Act as if running on a different system (like under ssh)",
         },
     };
     enum {HELP, HIDDEN_HELP, FISH};
@@ -215,6 +223,8 @@ int main(int argc, const char** argv){
         print_argparse_error(&parser, parse_err);
         return 1;
     }
+    if(is_remote && !scale)
+        scale = 1;
     npaths = pos_args[0].num_parsed;
     if(!npaths) return 0;
     for(int i = 0; i < npaths; i++){

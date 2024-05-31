@@ -1,2 +1,2 @@
 imgpgr: imgpgr.c
-	$(CC) $< -o $@ -O3
+	$(CC) $< -o $@ -O3 -lm

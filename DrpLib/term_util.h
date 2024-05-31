@@ -83,6 +83,11 @@ get_terminal_size(void){
     else {
         if(!w.ws_col || !w.ws_row)
             goto err;
+        if(w.ws_xpixel == 65535){
+            // assume invalid (ssh?)
+            w.ws_xpixel = w.ws_col * 8;
+            w.ws_ypixel = w.ws_row * 16;
+        }
         result = (TermSize){w.ws_col, w.ws_row, w.ws_xpixel, w.ws_ypixel};
     }
     err:
