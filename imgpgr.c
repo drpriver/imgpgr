@@ -1,20 +1,20 @@
 #define _DARWIN_BETTER_REALPATH 1
 #include <signal.h>
-#include <Drp/term_util.h>
-#include <Drp/argument_parsing.h>
-#include <Drp/file_util.h>
-#include <Drp/long_string.h>
-#include <Drp/get_input.h>
-#include <Drp/parse_numbers.h>
-#include <Drp/base64.h>
+#include "DrpLib/term_util.h"
+#include "DrpLib/argument_parsing.h"
+#include "DrpLib/file_util.h"
+#include "DrpLib/long_string.h"
+#include "DrpLib/get_input.h"
+#include "DrpLib/parse_numbers.h"
+#include "DrpLib/base64.h"
 #include <time.h>
 #define STBI_NEON 1
 #define STB_IMAGE_IMPLEMENTATION 1
-#include <Drp/stb/stb_image.h>
+#include "stb/stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION 1
-#include <Drp/stb/stb_image_resize.h>
+#include "stb/stb_image_resize.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <Drp/stb/stb_image_write.h>
+#include "stb/stb_image_write.h"
 
 static
 StringView imgpaths[1024*8];
@@ -47,9 +47,16 @@ void rescale(void){
     if(auto_height || auto_scale) height = sz.ypix*(sz.rows-2)/sz.rows;
     need_rescale = 0;
 }
+
+static void begin_synchronized_update(void){ printf("\033[?2026h"); }
+static void end_synchronized_update(void){ printf("\033[?2026l"); }
+static void go_to_topleft(void){ printf("\033[H"); }
+static void clear_screen(void){ printf("\033[2J"); }
+
 static
 void
 restore_buff(void){
+    end_synchronized_update();
     printf("\033[?1049l");
     fflush(stdout);
 }
@@ -81,7 +88,9 @@ write_func(void* ctx, void* d, int size){
             if((b64_size % 4) != 0) b64buff[b64_size++] = '=';
         }
         if(first){
-            printf("\033[H\033[2J");
+            begin_synchronized_update();
+            go_to_topleft();
+            clear_screen();
             printf("\033_Gf=100,a=t,i=%d,m=%d,q=1;",++id, m);
             first = 0;
         }
@@ -96,6 +105,7 @@ write_func(void* ctx, void* d, int size){
     printf("\033_Ga=d,d=i,i=%d,q=1\033\\",id-1);
     printf("\n\r");
     printf("\033\\\033[2K%d/%d\n", current+1, npaths);
+    end_synchronized_update();
     fflush(stdout);
 }
 
@@ -354,7 +364,10 @@ int main(int argc, const char** argv){
             size_t used = base64_encode((char*)data3, b64_len, data2, data2_length);
             if(!used) goto cleanup;
             uint8_t* to_write = data3;
-            printf("\033[H\033[2J\033_Ga=d\033\\");
+            begin_synchronized_update();
+            go_to_topleft();
+            clear_screen();
+            printf("\033_Ga=d\033\\");
             printf("\033_Gf=%d,a=T,s=%d,v=%d,", n*8, w, h);
             enum {chunk_size=4096};
             // write first chunk differently
@@ -393,6 +406,7 @@ int main(int argc, const char** argv){
             printf("\n\r");
             printf("\033\\\033[2K%d/%d\n", current+1, npaths);
             printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
+            end_synchronized_update();
             fflush(stdout);
             #if DO_TIMING
                 clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
@@ -410,16 +424,20 @@ int main(int argc, const char** argv){
             if(used %4 != 0) b64buff[used++] = '=';
             if(used %4 != 0) b64buff[used++] = '=';
             if(used %4 != 0) b64buff[used++] = '=';
-            printf("\033[H\033[2J\033_Ga=d\033\\");
+            begin_synchronized_update();
+            go_to_topleft();
+            clear_screen();
+            printf("\033_Ga=d\033\\");
             printf("\033_Ga=T,f=100,t=f,d=a,C=0;%.*s\033\\\n\r", (int)used, b64buff);
             printf("\033[2K%d/%d\n", current+1, npaths);
             printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
             // printf("%.*s\n", (int)path.length, path.text);
+            end_synchronized_update();
             fflush(stdout);
         }
     }
 }
 
 
-#include <Drp/Allocators/allocator.c>
-#include <Drp/get_input.c>
+#include "DrpLib/Allocators/allocator.c"
+#include "DrpLib/get_input.c"
