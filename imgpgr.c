@@ -223,7 +223,7 @@ int main(int argc, const char** argv){
         print_argparse_error(&parser, parse_err);
         return 1;
     }
-    if(is_remote && !scale)
+    if(is_remote && !scale && !auto_scale && !width && !height && !auto_width && !auto_height)
         scale = 1;
     npaths = pos_args[0].num_parsed;
     if(!npaths) return 0;
