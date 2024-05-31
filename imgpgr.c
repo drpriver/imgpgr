@@ -18,6 +18,8 @@
 
 static
 StringView imgpaths[1024*8];
+static
+StringView realpaths[1024*8];
 
 static
 int npaths = 0;
@@ -206,9 +208,10 @@ int main(int argc, const char** argv){
     npaths = pos_args[0].num_parsed;
     if(!npaths) return 0;
     for(int i = 0; i < npaths; i++){
-        StringView* p = &imgpaths[i];
-        p->text = realpath(p->text, NULL);
-        p->length = strlen(p->text);
+        const StringView* p = &imgpaths[i];
+        StringView* rp = &realpaths[i];
+        rp->text = realpath(p->text, NULL);
+        rp->length = strlen(rp->text);
     }
 
     GetInputCtx input = {
@@ -244,7 +247,7 @@ int main(int argc, const char** argv){
                     current++;
                     goto show;
                 case 'l':
-                    printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
+                    printf("%.*s\n", (int)realpaths[current].length, realpaths[current].text);
                     continue;
                 case '-':
                 case '<':
@@ -280,7 +283,7 @@ int main(int argc, const char** argv){
         show:;
         if(current < 0) current = 0;
         if(current >= npaths) current = npaths-1;
-        StringView path = imgpaths[current];
+        StringView path = realpaths[current];
         if(width || height || scale || auto_scale){
             if(need_rescale) rescale();
             int w = width, h = height;
@@ -333,6 +336,7 @@ int main(int argc, const char** argv){
                     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
                 #endif
                 stbi_write_png_to_func(write_func, NULL, w, h, n, data2, 0);
+                printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
                 #if DO_TIMING
                     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
                     printf("%.3fs\n", (double)t1.tv_sec+(double)t1.tv_nsec/1e9-(double)t0.tv_sec-(double)t0.tv_nsec/1e9);
@@ -388,6 +392,7 @@ int main(int argc, const char** argv){
             }
             printf("\n\r");
             printf("\033\\\033[2K%d/%d\n", current+1, npaths);
+            printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
             fflush(stdout);
             #if DO_TIMING
                 clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
@@ -408,6 +413,7 @@ int main(int argc, const char** argv){
             printf("\033[H\033[2J\033_Ga=d\033\\");
             printf("\033_Ga=T,f=100,t=f,d=a,C=0;%.*s\033\\\n\r", (int)used, b64buff);
             printf("\033[2K%d/%d\n", current+1, npaths);
+            printf("%.*s\n", (int)imgpaths[current].length, imgpaths[current].text);
             // printf("%.*s\n", (int)path.length, path.text);
             fflush(stdout);
         }
